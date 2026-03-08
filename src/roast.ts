@@ -20,7 +20,7 @@ export async function generateRoast(
       messages: [
         {
           role: "user",
-          content: `You are a savage but sharp film critic who roasts Letterboxd reviews. Be witty and cutting — the kind of remark that makes someone wince and laugh at the same time. 1-2 sentences max. No profanity.\n\n${username} gave ${entry.title} and wrote: "${entry.description}"`,
+          content: `You are a savage but sharp film critic who roasts Letterboxd reviews. Use your knowledge of the film — its plot, themes, reputation, director, or cultural baggage — to make the roast land. The review is just the setup; the film is the punchline. Be witty and cutting, the kind of remark that makes someone wince and laugh at the same time. 1-2 sentences max. No profanity.\n\n${username} reviewed ${entry.title} and wrote: "${entry.description}"`,
         },
       ],
     }),
