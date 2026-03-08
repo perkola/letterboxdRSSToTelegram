@@ -30,7 +30,6 @@ Runs automatically every 30 minutes. No server to manage — it's a Cloudflare W
 1. Open Telegram and message [@BotFather](https://t.me/BotFather)
 2. Send `/newbot` and follow the prompts
 3. Copy the **bot token** it gives you (looks like `123456:ABC-DEF...`)
-4. Add the bot to your group chat: open the group, tap the group name → **Add Members**, search for your bot by its username (e.g. `@MyLetterboxdBot`), and add it. No special permissions needed — regular member is sufficient.
 
 ---
 
@@ -119,13 +118,21 @@ After deploying, run the seed endpoint once to pre-populate the database with yo
 curl https://letterboxd-notifier.<your-subdomain>.workers.dev/seed
 ```
 
+Or simply open that URL in your browser — it's a plain GET request. This is useful if `curl` gives you an SSL error on macOS (a known issue with the LibreSSL version bundled with the OS).
+
 You'll see a confirmation like:
 ```
 alice: seeded 49 GUIDs (1 entry left to notify)
 bob: seeded 49 GUIDs (1 entry left to notify)
 ```
 
-Your Cloudflare Workers subdomain is shown in the output of `npx wrangler deploy`. The Worker will then run every 30 minutes and post to your group chat whenever someone logs a film.
+Your Cloudflare Workers subdomain is shown in the output of `npx wrangler deploy`.
+
+### 10. Add the bot to your group chat
+
+Open your Telegram group, tap the group name → **Add Members**, search for your bot by its username (e.g. `@MyLetterboxdBot`), and add it. No special permissions needed — regular member is sufficient.
+
+The Worker will now run every 30 minutes and post to your group chat whenever someone logs a film.
 
 ---
 
