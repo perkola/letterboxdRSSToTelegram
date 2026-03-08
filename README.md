@@ -30,7 +30,7 @@ Runs automatically every 30 minutes. No server to manage — it's a Cloudflare W
 1. Open Telegram and message [@BotFather](https://t.me/BotFather)
 2. Send `/newbot` and follow the prompts
 3. Copy the **bot token** it gives you (looks like `123456:ABC-DEF...`)
-4. Add the bot to your group chat as a member
+4. Add the bot to your group chat: open the group, tap the group name → **Add Members**, search for your bot by its username (e.g. `@MyLetterboxdBot`), and add it. No special permissions needed — regular member is sufficient.
 
 ---
 
