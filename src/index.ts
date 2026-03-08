@@ -103,24 +103,28 @@ async function runScheduled(env: Env): Promise<void> {
   const usernames = env.USERNAMES.split(",").map((u) => u.trim()).filter(Boolean);
 
   for (const username of usernames) {
-    const [entries, seenGuids] = await Promise.all([
-      fetchFeedEntries(username),
-      getSeenGuids(env.SEEN_REVIEWS, username),
-    ]);
+    try {
+      const [entries, seenGuids] = await Promise.all([
+        fetchFeedEntries(username),
+        getSeenGuids(env.SEEN_REVIEWS, username),
+      ]);
 
-    const newEntries = entries.filter((e) => !seenGuids.has(e.guid));
+      const newEntries = entries.filter((e) => !seenGuids.has(e.guid));
 
-    for (const entry of newEntries) {
-      const message = buildMessage(username, entry);
-      await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
-      seenGuids.add(entry.guid);
-    }
+      for (const entry of newEntries) {
+        const message = buildMessage(username, entry);
+        await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
+        seenGuids.add(entry.guid);
+      }
 
-    if (newEntries.length > 0) {
-      await saveSeenGuids(env.SEEN_REVIEWS, username, seenGuids);
-      console.log(`${username}: sent ${newEntries.length} new notification(s)`);
-    } else {
-      console.log(`${username}: no new entries`);
+      if (newEntries.length > 0) {
+        await saveSeenGuids(env.SEEN_REVIEWS, username, seenGuids);
+        console.log(`${username}: sent ${newEntries.length} new notification(s)`);
+      } else {
+        console.log(`${username}: no new entries`);
+      }
+    } catch (err) {
+      console.error(`${username}: failed to process — ${err}`);
     }
   }
 }
