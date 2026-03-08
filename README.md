@@ -98,6 +98,9 @@ npx wrangler secret put TELEGRAM_BOT_TOKEN
 
 npx wrangler secret put TELEGRAM_CHAT_ID
 # paste your chat ID when prompted
+
+npx wrangler secret put SEED_SECRET
+# choose any random string — you'll use it to authenticate the /seed endpoint
 ```
 
 Secrets are encrypted and stored by Cloudflare — they are never committed to your repo.
@@ -115,7 +118,7 @@ npx wrangler deploy
 After deploying, run the seed endpoint once to pre-populate the database with your users' existing reviews. This prevents a notification burst on the first run — only the single most recent entry per user will be posted.
 
 ```bash
-curl https://letterboxd-notifier.<your-subdomain>.workers.dev/seed
+curl "https://letterboxd-notifier.<your-subdomain>.workers.dev/seed?secret=<your-seed-secret>"
 ```
 
 Or simply open that URL in your browser — it's a plain GET request. This is useful if `curl` gives you an SSL error on macOS (a known issue with the LibreSSL version bundled with the OS).
@@ -167,7 +170,7 @@ curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
 Or trigger the seed endpoint:
 
 ```bash
-curl "http://localhost:8787/seed"
+curl "http://localhost:8787/seed?secret=<your-seed-secret>"
 ```
 
 Note: local runs won't have access to your real KV data or secrets unless you configure a `.dev.vars` file (see [Wrangler docs](https://developers.cloudflare.com/workers/wrangler/configuration/#secrets)).

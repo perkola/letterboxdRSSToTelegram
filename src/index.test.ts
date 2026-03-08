@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { parseFeed, buildMessage, runScheduled, runSeed, FeedEntry } from "./index";
+import handler, { parseFeed, buildMessage, runScheduled, runSeed, FeedEntry } from "./index";
 
 // ── Test helpers ────────────────────────────────────────────────────────────
 
@@ -17,6 +17,7 @@ function makeEnv(kv: ReturnType<typeof makeMockKV>, usernames = "testuser") {
     USERNAMES: usernames,
     TELEGRAM_BOT_TOKEN: "test-token",
     TELEGRAM_CHAT_ID: "test-chat",
+    SEED_SECRET: "test-secret",
   };
 }
 
@@ -230,5 +231,19 @@ describe("runSeed", () => {
     expect(guids).toContain("guid-old1");
     expect(guids).toContain("guid-old2");
     expect(guids).not.toContain("guid-latest");
+  });
+});
+
+// ── /seed auth ──────────────────────────────────────────────────────────────
+
+describe("fetch handler /seed auth", () => {
+  it("returns 401 when secret is missing or wrong", async () => {
+    const env = makeEnv(makeMockKV());
+
+    const noSecret = await handler.fetch(new Request("https://example.com/seed"), env as any, {} as any);
+    expect(noSecret.status).toBe(401);
+
+    const wrongSecret = await handler.fetch(new Request("https://example.com/seed?secret=wrong"), env as any, {} as any);
+    expect(wrongSecret.status).toBe(401);
   });
 });

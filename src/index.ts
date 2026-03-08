@@ -5,6 +5,7 @@ export interface Env {
   USERNAMES: string;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_CHAT_ID: string;
+  SEED_SECRET: string;
 }
 
 // Maximum number of GUIDs to retain per user in KV (prevents unbounded growth)
@@ -164,8 +165,13 @@ export default {
   },
 
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
-    const { pathname } = new URL(req.url);
-    if (pathname === "/seed") return runSeed(env);
+    const url = new URL(req.url);
+    if (url.pathname === "/seed") {
+      if (url.searchParams.get("secret") !== env.SEED_SECRET) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+      return runSeed(env);
+    }
     return new Response("Not found", { status: 404 });
   },
 };

@@ -35,6 +35,7 @@ The Worker exports two handlers:
 | KV namespace ID | `wrangler.toml` → `[[kv_namespaces]]` |
 | Telegram bot token | `wrangler secret put TELEGRAM_BOT_TOKEN` |
 | Telegram chat ID | `wrangler secret put TELEGRAM_CHAT_ID` |
+| Seed endpoint secret | `wrangler secret put SEED_SECRET` |
 
 `wrangler.toml` is committed with placeholder values. Personal values are excluded from git via `git update-index --skip-worktree wrangler.toml`.
 
