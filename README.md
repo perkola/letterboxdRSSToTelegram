@@ -176,9 +176,8 @@ Note: local runs won't have access to your real KV data or secrets unless you co
 
 ```
 src/
-  index.ts          # Everything: RSS fetch, XML parse, KV dedup, Telegram notify
-wrangler.toml       # Worker name, cron schedule, KV binding, USERNAMES var
-config.example.json # Documents the required vars and secrets (not used at runtime)
+  index.ts     # Everything: RSS fetch, XML parse, KV dedup, Telegram notify
+wrangler.toml  # Worker name, cron schedule, KV binding, USERNAMES var
 ```
 
 ### How it works
