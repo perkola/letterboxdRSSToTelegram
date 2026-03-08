@@ -12,7 +12,7 @@ const MAX_SEEN_GUIDS = 200;
 
 // ── RSS parsing ────────────────────────────────────────────────────────────────
 
-interface FeedEntry {
+export interface FeedEntry {
   guid: string;
   title: string;
   link: string;
@@ -30,7 +30,7 @@ async function fetchFeedEntries(username: string): Promise<FeedEntry[]> {
   return parseFeed(xml);
 }
 
-function parseFeed(xml: string): FeedEntry[] {
+export function parseFeed(xml: string): FeedEntry[] {
   const parser = new XMLParser({
     ignoreAttributes: true,
     // Treat these tags as arrays so single-item feeds still return arrays
@@ -74,7 +74,7 @@ async function sendTelegramMessage(
   }
 }
 
-function buildMessage(username: string, entry: FeedEntry): string {
+export function buildMessage(username: string, entry: FeedEntry): string {
   const spoilerStr = entry.hasSpoiler ? " ⚠️ Spoiler" : "";
   return `🎬 ${username} watched ${entry.title}${spoilerStr}\n${entry.link}`;
 }
@@ -99,7 +99,7 @@ async function saveSeenGuids(
 
 // ── Scheduled handler ──────────────────────────────────────────────────────────
 
-async function runScheduled(env: Env): Promise<void> {
+export async function runScheduled(env: Env): Promise<void> {
   const usernames = env.USERNAMES.split(",").map((u) => u.trim()).filter(Boolean);
 
   for (const username of usernames) {
@@ -134,7 +134,7 @@ async function runScheduled(env: Env): Promise<void> {
 // GUIDs except the latest per user. This prevents a notification burst on the
 // first scheduled run, while still surfacing the single most recent entry.
 
-async function runSeed(env: Env): Promise<Response> {
+export async function runSeed(env: Env): Promise<Response> {
   const usernames = env.USERNAMES.split(",").map((u) => u.trim()).filter(Boolean);
   const results: string[] = [];
 
