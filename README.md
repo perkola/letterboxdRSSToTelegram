@@ -54,11 +54,10 @@ npm install
 
 ---
 
-### 4. Install Wrangler and log in
+### 4. Log in to Cloudflare
 
 ```bash
-npm install -g wrangler
-wrangler login
+npx wrangler login
 ```
 
 This opens a browser window to authenticate with your Cloudflare account.
@@ -68,7 +67,7 @@ This opens a browser window to authenticate with your Cloudflare account.
 ### 5. Create the KV namespace
 
 ```bash
-wrangler kv namespace create SEEN_REVIEWS
+npx wrangler kv namespace create SEEN_REVIEWS
 ```
 
 Copy the `id` from the output and paste it into `wrangler.toml`:
@@ -95,10 +94,10 @@ USERNAMES = "alice,bob,carol"
 ### 7. Set secrets
 
 ```bash
-wrangler secret put TELEGRAM_BOT_TOKEN
+npx wrangler secret put TELEGRAM_BOT_TOKEN
 # paste your bot token when prompted
 
-wrangler secret put TELEGRAM_CHAT_ID
+npx wrangler secret put TELEGRAM_CHAT_ID
 # paste your chat ID when prompted
 ```
 
@@ -109,7 +108,7 @@ Secrets are encrypted and stored by Cloudflare — they are never committed to y
 ### 8. Deploy
 
 ```bash
-wrangler deploy
+npx wrangler deploy
 ```
 
 ### 9. Seed existing history
@@ -126,7 +125,7 @@ alice: seeded 49 GUIDs (1 entry left to notify)
 bob: seeded 49 GUIDs (1 entry left to notify)
 ```
 
-Your Cloudflare Workers subdomain is shown in the output of `wrangler deploy`. The Worker will then run every 30 minutes and post to your group chat whenever someone logs a film.
+Your Cloudflare Workers subdomain is shown in the output of `npx wrangler deploy`. The Worker will then run every 30 minutes and post to your group chat whenever someone logs a film.
 
 ---
 
@@ -149,7 +148,7 @@ npx tsc --noEmit
 Start the local dev server:
 
 ```bash
-wrangler dev
+npx wrangler dev
 ```
 
 Then in a separate terminal, trigger the scheduled handler:
