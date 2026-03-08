@@ -4,10 +4,10 @@ A Cloudflare Worker that watches [Letterboxd](https://letterboxd.com) RSS feeds 
 
 **Example notification:**
 ```
-🎬 alice watched Alien Romulus (2024) ★★★½
+🎬 alice watched Alien Romulus, 2024 - ★★★½
 https://letterboxd.com/alice/film/alien-romulus/
 
-🎬 bob watched The Substance (2024) ★★★★★ ⚠️ Spoiler
+🎬 bob watched The Substance, 2024 - ★★★★★ ⚠️ Spoiler
 https://letterboxd.com/bob/film/the-substance/
 ```
 

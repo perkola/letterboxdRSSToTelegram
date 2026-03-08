@@ -16,7 +16,6 @@ interface FeedEntry {
   guid: string;
   title: string;
   link: string;
-  rating: number | null;
   hasSpoiler: boolean;
 }
 
@@ -46,20 +45,10 @@ function parseFeed(xml: string): FeedEntry[] {
     const guid = String(i["guid"] ?? "");
     const title = String(i["title"] ?? "");
     const link = String(i["link"] ?? "");
-    const rawRating = i["letterboxd:memberRating"];
-    const rating = rawRating != null ? Number(rawRating) : null;
     const hasSpoiler = Boolean(i["letterboxd:spoilerWarning"]);
 
-    return { guid, title, link, rating, hasSpoiler };
+    return { guid, title, link, hasSpoiler };
   });
-}
-
-// ── Rating formatting ──────────────────────────────────────────────────────────
-
-function formatRating(rating: number): string {
-  const full = Math.floor(rating);
-  const half = rating % 1 >= 0.5;
-  return "★".repeat(full) + (half ? "½" : "");
 }
 
 // ── Telegram ───────────────────────────────────────────────────────────────────
@@ -86,9 +75,8 @@ async function sendTelegramMessage(
 }
 
 function buildMessage(username: string, entry: FeedEntry): string {
-  const ratingStr = entry.rating != null ? ` ${formatRating(entry.rating)}` : "";
   const spoilerStr = entry.hasSpoiler ? " ⚠️ Spoiler" : "";
-  return `🎬 ${username} watched ${entry.title}${ratingStr}${spoilerStr}\n${entry.link}`;
+  return `🎬 ${username} watched ${entry.title}${spoilerStr}\n${entry.link}`;
 }
 
 // ── KV helpers ─────────────────────────────────────────────────────────────────
