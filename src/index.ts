@@ -1,4 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
+import { generateRoast } from "./roast";
 
 export interface Env {
   SEEN_REVIEWS: KVNamespace;
@@ -6,6 +7,7 @@ export interface Env {
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_CHAT_ID: string;
   SEED_SECRET: string;
+  ANTHROPIC_API_KEY?: string;
 }
 
 // Maximum number of GUIDs to retain per user in KV (prevents unbounded growth)
@@ -18,6 +20,7 @@ export interface FeedEntry {
   title: string;
   link: string;
   hasSpoiler: boolean;
+  description: string;
 }
 
 async function fetchFeedEntries(username: string): Promise<FeedEntry[]> {
@@ -29,6 +32,12 @@ async function fetchFeedEntries(username: string): Promise<FeedEntry[]> {
   }
   const xml = await res.text();
   return parseFeed(xml);
+}
+
+// Strip HTML tags and the "Watched DD Mon YYYY." metadata prefix Letterboxd prepends
+function extractDescription(raw: string): string {
+  const text = raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return text.replace(/^Watched\s+\d+\s+\w+\s+\d{4}\.\s*/i, "").trim();
 }
 
 export function parseFeed(xml: string): FeedEntry[] {
@@ -47,8 +56,9 @@ export function parseFeed(xml: string): FeedEntry[] {
     const title = String(i["title"] ?? "");
     const link = String(i["link"] ?? "");
     const hasSpoiler = Boolean(i["letterboxd:spoilerWarning"]);
+    const description = extractDescription(String(i["description"] ?? ""));
 
-    return { guid, title, link, hasSpoiler };
+    return { guid, title, link, hasSpoiler, description };
   });
 }
 
@@ -57,8 +67,9 @@ export function parseFeed(xml: string): FeedEntry[] {
 async function sendTelegramMessage(
   token: string,
   chatId: string,
-  text: string
-): Promise<void> {
+  text: string,
+  replyToMessageId?: number
+): Promise<number | null> {
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -66,13 +77,18 @@ async function sendTelegramMessage(
       chat_id: chatId,
       text,
       disable_web_page_preview: false,
+      ...(replyToMessageId ? { reply_to_message_id: replyToMessageId } : {}),
     }),
   });
 
   if (!res.ok) {
     const body = await res.text();
     console.error(`Telegram API error: ${res.status} ${body}`);
+    return null;
   }
+
+  const data = await res.json() as { result?: { message_id?: number } };
+  return data.result?.message_id ?? null;
 }
 
 export function buildMessage(username: string, entry: FeedEntry): string {
@@ -114,8 +130,19 @@ export async function runScheduled(env: Env): Promise<void> {
 
       for (const entry of newEntries) {
         const message = buildMessage(username, entry);
-        await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
+        const msgId = await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
         seenGuids.add(entry.guid);
+
+        if (env.ANTHROPIC_API_KEY && entry.description) {
+          try {
+            const roast = await generateRoast(env.ANTHROPIC_API_KEY, username, entry);
+            if (roast && msgId) {
+              await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, roast, msgId);
+            }
+          } catch (err) {
+            console.error(`${username}: roast failed — ${err}`);
+          }
+        }
       }
 
       if (newEntries.length > 0) {

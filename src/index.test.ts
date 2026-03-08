@@ -31,28 +31,31 @@ function makeRssXml(items: string[]): string {
 </rss>`;
 }
 
-function makeItem(guid: string, title: string, link: string, hasSpoiler = false): string {
+function makeItem(guid: string, title: string, link: string, hasSpoiler = false, description = ""): string {
   const spoilerTag = hasSpoiler
     ? "<letterboxd:spoilerWarning>This review may contain spoilers.</letterboxd:spoilerWarning>"
     : "";
+  const descTag = description ? `<description><![CDATA[${description}]]></description>` : "";
   return `<item>
       <guid>${guid}</guid>
       <title>${title}</title>
       <link>${link}</link>
       ${spoilerTag}
+      ${descTag}
     </item>`;
 }
 
 // ── parseFeed ───────────────────────────────────────────────────────────────
 
 describe("parseFeed", () => {
-  it("parses a valid feed entry with rating and spoiler flag", () => {
+  it("parses a valid feed entry with rating, spoiler flag, and description", () => {
     const xml = makeRssXml([
       makeItem(
         "https://letterboxd.com/user/film/review1/",
         "The Matrix, 1999 - ★★★★",
         "https://letterboxd.com/user/film/review1/",
-        true
+        true,
+        "<p>Watched 01 Jan 2025. <br/> A mind-bending sci-fi classic.</p>"
       ),
     ]);
     const entries = parseFeed(xml);
@@ -61,9 +64,10 @@ describe("parseFeed", () => {
     expect(entries[0].title).toBe("The Matrix, 1999 - ★★★★");
     expect(entries[0].link).toBe("https://letterboxd.com/user/film/review1/");
     expect(entries[0].hasSpoiler).toBe(true);
+    expect(entries[0].description).toBe("A mind-bending sci-fi classic.");
   });
 
-  it("parses a feed entry with no spoiler warning", () => {
+  it("parses a feed entry with no spoiler warning and no description", () => {
     const xml = makeRssXml([
       makeItem(
         "https://letterboxd.com/user/film/review2/",
@@ -75,6 +79,7 @@ describe("parseFeed", () => {
     const entries = parseFeed(xml);
     expect(entries).toHaveLength(1);
     expect(entries[0].hasSpoiler).toBe(false);
+    expect(entries[0].description).toBe("");
   });
 
   it("returns empty array for empty channel", () => {
@@ -110,6 +115,7 @@ describe("buildMessage", () => {
     title: "The Matrix, 1999 - ★★★★",
     link: "https://letterboxd.com/user/film/review1/",
     hasSpoiler: false,
+    description: "",
   };
 
   it("formats correctly without spoiler warning", () => {
@@ -126,7 +132,6 @@ describe("buildMessage", () => {
       "🎬 alice watched The Matrix, 1999 - ★★★★ ⚠️ Spoiler\nhttps://letterboxd.com/user/film/review1/"
     );
   });
-
 });
 
 // ── runScheduled ────────────────────────────────────────────────────────────
@@ -144,7 +149,7 @@ describe("runScheduled", () => {
     const mockFetch = vi
       .fn()
       .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(feedXml) } as unknown as Response)
-      .mockResolvedValueOnce({ ok: true } as unknown as Response);
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ result: { message_id: 1 } }) } as unknown as Response);
     vi.stubGlobal("fetch", mockFetch);
 
     await runScheduled(env as any);
@@ -177,6 +182,32 @@ describe("runScheduled", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
+  it("sends roast as a threaded reply when ANTHROPIC_API_KEY is set and entry has a description", async () => {
+    const kv = makeMockKV();
+    const env = { ...makeEnv(kv, "alice"), ANTHROPIC_API_KEY: "test-anthropic-key" };
+    const feedXml = makeRssXml([
+      makeItem("guid1", "Pulp Fiction, 1994 - ★★★★★", "https://letterboxd.com/a/", false, "<p>Watched 01 Jan 2025. A masterpiece.</p>"),
+    ]);
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(feedXml) } as unknown as Response)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ result: { message_id: 42 } }) } as unknown as Response)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ content: [{ text: "Bold choice." }] }) } as unknown as Response)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ result: { message_id: 43 } }) } as unknown as Response);
+    vi.stubGlobal("fetch", mockFetch);
+
+    await runScheduled(env as any);
+
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+    const [claudeUrl] = mockFetch.mock.calls[2] as [string, RequestInit];
+    expect(claudeUrl).toBe("https://api.anthropic.com/v1/messages");
+    const [, roastInit] = mockFetch.mock.calls[3] as [string, RequestInit];
+    const roastBody = JSON.parse(roastInit.body as string);
+    expect(roastBody.reply_to_message_id).toBe(42);
+    expect(roastBody.text).toBe("🤖 Bold choice.");
+  });
+
   it("continues processing other users when one feed fetch throws", async () => {
     const kv = makeMockKV();
     const env = makeEnv(kv, "alice,bob");
@@ -186,7 +217,7 @@ describe("runScheduled", () => {
       .fn()
       .mockRejectedValueOnce(new Error("network error"))
       .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(feedXml) } as unknown as Response)
-      .mockResolvedValueOnce({ ok: true } as unknown as Response);
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ result: { message_id: 1 } }) } as unknown as Response);
     vi.stubGlobal("fetch", mockFetch);
 
     await runScheduled(env as any);
