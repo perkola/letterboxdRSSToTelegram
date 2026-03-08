@@ -17,7 +17,8 @@ A Cloudflare Worker that polls Letterboxd RSS feeds every 30 minutes and sends T
 ## Project structure
 
 ```
-src/index.ts          # All logic: RSS fetch, XML parse, KV dedup, Telegram notify
+src/index.ts          # Core logic: RSS fetch, XML parse, KV dedup, Telegram notify
+src/roast.ts          # Optional add-on: Claude API roast generator
 wrangler.toml         # Worker config: cron schedule, KV binding, USERNAMES var
 ```
 
@@ -36,6 +37,7 @@ The Worker exports two handlers:
 | Telegram bot token | `wrangler secret put TELEGRAM_BOT_TOKEN` |
 | Telegram chat ID | `wrangler secret put TELEGRAM_CHAT_ID` |
 | Seed endpoint secret | `wrangler secret put SEED_SECRET` |
+| Anthropic API key (optional) | `wrangler secret put ANTHROPIC_API_KEY` |
 
 `wrangler.toml` is committed with placeholder values. Personal values are excluded from git via `git update-index --skip-worktree wrangler.toml`.
 
@@ -46,6 +48,7 @@ The Worker exports two handlers:
 - **XML parser** must use `ignoreAttributes: true` — without it, `<guid isPermaLink="true">` parses as an object instead of a string, silently breaking deduplication.
 - **KV entries** are capped at 200 GUIDs per user (`seen:<username>`) to prevent unbounded growth.
 - **`/seed` endpoint** pre-populates KV on first deploy to avoid notifying the entire review history. Call it once immediately after deploying, before adding the bot to the group chat.
+- **Roast add-on** (`src/roast.ts`) — entirely opt-in, gated on `ANTHROPIC_API_KEY`. Calls Claude Haiku after each notification to generate a witty roast of the review text, posted as a threaded Telegram reply via `reply_to_message_id`. Only fires for entries with a written description (the `<description>` field, stripped of HTML and Letterboxd's "Watched DD Mon YYYY." prefix). Roast errors are caught and logged without blocking notifications.
 
 ---
 

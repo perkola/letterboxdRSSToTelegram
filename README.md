@@ -15,6 +15,15 @@ Runs automatically every 30 minutes. No server to manage — it's a Cloudflare W
 
 ---
 
+## Contents
+
+- [Using it](#using-it)
+- [Optional: AI roast add-on](#optional-ai-roast-add-on)
+- [Development](#development)
+- [License](#license)
+
+---
+
 ## Using it
 
 ### Prerequisites
@@ -139,6 +148,38 @@ The Worker will now run every 30 minutes and post to your group chat whenever so
 
 ---
 
+## Optional: AI roast add-on
+
+When a tracked user posts a review with written text, the bot can automatically reply with a witty roast of the review — posted as a threaded reply to the notification.
+
+**Example:**
+```
+🎬 alice watched Alien Romulus, 2024 - ★★★½
+https://letterboxd.com/alice/film/alien-romulus/
+
+  🤖 Giving three and a half stars to a film that spent $65 million proving
+     Ridley Scott was right to leave the franchise — bold.
+```
+
+Roasts are powered by the [Claude API](https://console.anthropic.com) (Haiku model — fast and cheap). This feature is entirely opt-in: if `ANTHROPIC_API_KEY` is not set, the bot behaves exactly as before. Reviews with no written text (ratings only) are never roasted.
+
+### Enable it
+
+1. Get an Anthropic API key from [console.anthropic.com](https://console.anthropic.com)
+2. Set it as a Worker secret:
+   ```bash
+   npx wrangler secret put ANTHROPIC_API_KEY
+   # paste your API key when prompted
+   ```
+3. Redeploy:
+   ```bash
+   npx wrangler deploy
+   ```
+
+That's it. The next time a tracked user posts a review with written text, the bot will reply with a roast.
+
+---
+
 ## Development
 
 ### Local setup
@@ -179,7 +220,8 @@ Note: local runs won't have access to your real KV data or secrets unless you co
 
 ```
 src/
-  index.ts     # Everything: RSS fetch, XML parse, KV dedup, Telegram notify
+  index.ts     # Core logic: RSS fetch, XML parse, KV dedup, Telegram notify
+  roast.ts     # Optional add-on: Claude API roast generator
 wrangler.toml  # Worker name, cron schedule, KV binding, USERNAMES var
 ```
 
