@@ -33,8 +33,7 @@ async function fetchFeedEntries(username: string): Promise<FeedEntry[]> {
 
 function parseFeed(xml: string): FeedEntry[] {
   const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: "@_",
+    ignoreAttributes: true,
     // Treat these tags as arrays so single-item feeds still return arrays
     isArray: (tagName) => tagName === "item",
   });
@@ -112,30 +111,69 @@ async function saveSeenGuids(
 
 // ── Scheduled handler ──────────────────────────────────────────────────────────
 
+async function runScheduled(env: Env): Promise<void> {
+  const usernames = env.USERNAMES.split(",").map((u) => u.trim()).filter(Boolean);
+
+  for (const username of usernames) {
+    const [entries, seenGuids] = await Promise.all([
+      fetchFeedEntries(username),
+      getSeenGuids(env.SEEN_REVIEWS, username),
+    ]);
+
+    const newEntries = entries.filter((e) => !seenGuids.has(e.guid));
+
+    for (const entry of newEntries) {
+      const message = buildMessage(username, entry);
+      await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
+      seenGuids.add(entry.guid);
+    }
+
+    if (newEntries.length > 0) {
+      await saveSeenGuids(env.SEEN_REVIEWS, username, seenGuids);
+      console.log(`${username}: sent ${newEntries.length} new notification(s)`);
+    } else {
+      console.log(`${username}: no new entries`);
+    }
+  }
+}
+
+// ── Seed handler ───────────────────────────────────────────────────────────────
+// Hit GET /seed once after first deploy to pre-populate KV with all existing
+// GUIDs except the latest per user. This prevents a notification burst on the
+// first scheduled run, while still surfacing the single most recent entry.
+
+async function runSeed(env: Env): Promise<Response> {
+  const usernames = env.USERNAMES.split(",").map((u) => u.trim()).filter(Boolean);
+  const results: string[] = [];
+
+  for (const username of usernames) {
+    const entries = await fetchFeedEntries(username);
+    if (entries.length === 0) {
+      results.push(`${username}: no entries found`);
+      continue;
+    }
+
+    // Keep all GUIDs except the first (most recent) entry — that one will be
+    // "discovered" and notified on the next scheduled run.
+    const guidsToSeed = new Set(entries.slice(1).map((e) => e.guid));
+    await saveSeenGuids(env.SEEN_REVIEWS, username, guidsToSeed);
+    results.push(`${username}: seeded ${guidsToSeed.size} GUIDs (1 entry left to notify)`);
+    console.log(`Seed: ${username}: ${guidsToSeed.size} GUIDs written to KV`);
+  }
+
+  return new Response(results.join("\n"), { status: 200 });
+}
+
+// ── Exports ────────────────────────────────────────────────────────────────────
+
 export default {
   async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
-    const usernames = env.USERNAMES.split(",").map((u) => u.trim()).filter(Boolean);
+    await runScheduled(env);
+  },
 
-    for (const username of usernames) {
-      const [entries, seenGuids] = await Promise.all([
-        fetchFeedEntries(username),
-        getSeenGuids(env.SEEN_REVIEWS, username),
-      ]);
-
-      const newEntries = entries.filter((e) => !seenGuids.has(e.guid));
-
-      for (const entry of newEntries) {
-        const message = buildMessage(username, entry);
-        await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
-        seenGuids.add(entry.guid);
-      }
-
-      if (newEntries.length > 0) {
-        await saveSeenGuids(env.SEEN_REVIEWS, username, seenGuids);
-        console.log(`${username}: sent ${newEntries.length} new notification(s)`);
-      } else {
-        console.log(`${username}: no new entries`);
-      }
-    }
+  async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+    const { pathname } = new URL(req.url);
+    if (pathname === "/seed") return runSeed(env);
+    return new Response("Not found", { status: 404 });
   },
 };

@@ -112,7 +112,21 @@ Secrets are encrypted and stored by Cloudflare — they are never committed to y
 wrangler deploy
 ```
 
-That's it. The Worker will run every 30 minutes and post to your group chat whenever someone logs a film.
+### 9. Seed existing history
+
+After deploying, run the seed endpoint once to pre-populate the database with your users' existing reviews. This prevents a notification burst on the first run — only the single most recent entry per user will be posted.
+
+```bash
+curl https://letterboxd-notifier.<your-subdomain>.workers.dev/seed
+```
+
+You'll see a confirmation like:
+```
+alice: seeded 49 GUIDs (1 entry left to notify)
+bob: seeded 49 GUIDs (1 entry left to notify)
+```
+
+Your Cloudflare Workers subdomain is shown in the output of `wrangler deploy`. The Worker will then run every 30 minutes and post to your group chat whenever someone logs a film.
 
 ---
 
@@ -132,16 +146,22 @@ npx tsc --noEmit
 
 ### Running locally
 
-Cloudflare Workers can be run locally using Wrangler's dev server. Because this Worker only exports a `scheduled` handler (no HTTP handler), you trigger it manually:
+Start the local dev server:
 
 ```bash
 wrangler dev
 ```
 
-Then in a separate terminal:
+Then in a separate terminal, trigger the scheduled handler:
 
 ```bash
 curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
+```
+
+Or trigger the seed endpoint:
+
+```bash
+curl "http://localhost:8787/seed"
 ```
 
 Note: local runs won't have access to your real KV data or secrets unless you configure a `.dev.vars` file (see [Wrangler docs](https://developers.cloudflare.com/workers/wrangler/configuration/#secrets)).
@@ -163,6 +183,10 @@ config.example.json # Documents the required vars and secrets (not used at runti
 4. Loads previously seen entry GUIDs from Cloudflare KV (`seen:<username>`)
 5. Sends a Telegram message for any entry not yet seen
 6. Saves the updated GUID list back to KV to prevent duplicates
+
+Up to 200 GUIDs are retained per user — enough to cover roughly a year of activity without the KV value growing unbounded.
+
+The `/seed` HTTP endpoint (called once after first deploy) pre-populates KV with all existing GUIDs except the most recent one per user, so the first scheduled run posts one notification per user rather than their entire history.
 
 ### Contributing
 
