@@ -1,0 +1,13 @@
+name = "letterboxd-notifier"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[triggers]
+crons = ["*/30 * * * *"]
+
+[[kv_namespaces]]
+binding = "SEEN_REVIEWS"
+id = "<your-kv-namespace-id>"
+
+[vars]
+USERNAMES = "alice,bob,carol"   # Comma-separated Letterboxd usernames to track

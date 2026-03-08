@@ -1,0 +1,10 @@
+{
+  "_comment": "This file is for reference only. All real config goes in wrangler.toml (vars) or via `wrangler secret put` (secrets).",
+  "wrangler_vars": {
+    "USERNAMES": "alice,bob,carol"
+  },
+  "wrangler_secrets": {
+    "TELEGRAM_BOT_TOKEN": "your-bot-token-from-botfather",
+    "TELEGRAM_CHAT_ID": "your-group-chat-id"
+  }
+}
