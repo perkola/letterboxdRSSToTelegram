@@ -55,7 +55,7 @@ The Worker exports two handlers:
 npm install
 npx tsc --noEmit                                              # type check
 npx wrangler dev                                              # local server
-curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"      # trigger cron
+curl "http://localhost:8787/cdn-cgi/handler/scheduled"        # trigger cron
 curl "http://localhost:8787/seed"                             # trigger seed
 ```
 

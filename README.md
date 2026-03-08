@@ -164,7 +164,7 @@ npx wrangler dev
 Then in a separate terminal, trigger the scheduled handler:
 
 ```bash
-curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
+curl "http://localhost:8787/cdn-cgi/handler/scheduled"
 ```
 
 Or trigger the seed endpoint:
