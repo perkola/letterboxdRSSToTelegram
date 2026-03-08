@@ -203,3 +203,7 @@ Pull requests welcome. Please keep the code free of hardcoded personal data (use
 ## License
 
 MIT
+
+---
+
+*All code in this repository was written by [Claude Sonnet 4.6](https://claude.ai).*
