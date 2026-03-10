@@ -1,5 +1,8 @@
 # Letterboxd RSS to Telegram
 
+[![CI](https://github.com/perkola/letterboxdRSSToTelegram/actions/workflows/test.yml/badge.svg)](https://github.com/perkola/letterboxdRSSToTelegram/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A Cloudflare Worker that watches [Letterboxd](https://letterboxd.com) RSS feeds and posts a Telegram message to a group chat whenever a tracked user logs a film.
 
 **Example notification:**
