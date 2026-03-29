@@ -34,10 +34,10 @@ async function fetchFeedEntries(username: string): Promise<FeedEntry[]> {
   return parseFeed(xml);
 }
 
-// Strip HTML tags and the "Watched DD Mon YYYY." metadata prefix Letterboxd prepends
+// Strip HTML tags and the "Watched on Weekday Month DD, YYYY." metadata prefix Letterboxd prepends
 function extractDescription(raw: string): string {
   const text = raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  return text.replace(/^Watched\s+\d+\s+\w+\s+\d{4}\.\s*/i, "").trim();
+  return text.replace(/^Watched\s+[^.]+\.\s*/i, "").trim();
 }
 
 export function parseFeed(xml: string): FeedEntry[] {

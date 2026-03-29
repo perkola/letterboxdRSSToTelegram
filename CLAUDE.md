@@ -48,7 +48,7 @@ The Worker exports two handlers:
 - **XML parser** must use `ignoreAttributes: true` — without it, `<guid isPermaLink="true">` parses as an object instead of a string, silently breaking deduplication.
 - **KV entries** are capped at 200 GUIDs per user (`seen:<username>`) to prevent unbounded growth.
 - **`/seed` endpoint** pre-populates KV on first deploy to avoid notifying the entire review history. Call it once immediately after deploying, before adding the bot to the group chat.
-- **Roast add-on** (`src/roast.ts`) — entirely opt-in, gated on `ANTHROPIC_API_KEY`. Calls Claude Haiku after each notification to generate a witty roast of the review text, posted as a threaded Telegram reply via `reply_to_message_id`. Only fires for entries with a written description (the `<description>` field, stripped of HTML and Letterboxd's "Watched DD Mon YYYY." prefix). Roast errors are caught and logged without blocking notifications.
+- **Roast add-on** (`src/roast.ts`) — entirely opt-in, gated on `ANTHROPIC_API_KEY`. Calls Claude Haiku after each notification to generate a witty roast of the review text, posted as a threaded Telegram reply via `reply_to_message_id`. Only fires for entries with a written description (the `<description>` field, stripped of HTML and Letterboxd's "Watched on Weekday Month DD, YYYY." metadata prefix). Roast errors are caught and logged without blocking notifications.
 
 ---
 

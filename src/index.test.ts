@@ -49,13 +49,14 @@ function makeItem(guid: string, title: string, link: string, hasSpoiler = false,
 
 describe("parseFeed", () => {
   it("parses a valid feed entry with rating, spoiler flag, and description", () => {
+    // Real Letterboxd format: written reviews have no "Watched on..." prefix — just the review text
     const xml = makeRssXml([
       makeItem(
         "https://letterboxd.com/user/film/review1/",
         "The Matrix, 1999 - ★★★★",
         "https://letterboxd.com/user/film/review1/",
         true,
-        "<p>Watched 01 Jan 2025. <br/> A mind-bending sci-fi classic.</p>"
+        '<p><img src="poster.jpg"/></p> <p>A mind-bending sci-fi classic.</p>'
       ),
     ]);
     const entries = parseFeed(xml);
@@ -67,12 +68,28 @@ describe("parseFeed", () => {
     expect(entries[0].description).toBe("A mind-bending sci-fi classic.");
   });
 
-  it("parses a feed entry with no spoiler warning and no description", () => {
+  it("strips 'Watched on...' metadata from rating-only entries, yielding empty description", () => {
+    // Real Letterboxd format for log-only entries (no written review)
     const xml = makeRssXml([
       makeItem(
         "https://letterboxd.com/user/film/review2/",
         "Inception, 2010 - ★★★★★",
         "https://letterboxd.com/user/film/review2/",
+        false,
+        '<p><img src="poster.jpg"/></p> <p>Watched on Wednesday February 25, 2026.</p>'
+      ),
+    ]);
+    const entries = parseFeed(xml);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].description).toBe("");
+  });
+
+  it("parses a feed entry with no spoiler warning and no description", () => {
+    const xml = makeRssXml([
+      makeItem(
+        "https://letterboxd.com/user/film/review3/",
+        "Inception, 2010 - ★★★★★",
+        "https://letterboxd.com/user/film/review3/",
         false
       ),
     ]);
@@ -185,8 +202,9 @@ describe("runScheduled", () => {
   it("sends roast as a threaded reply when ANTHROPIC_API_KEY is set and entry has a description", async () => {
     const kv = makeMockKV();
     const env = { ...makeEnv(kv, "alice"), ANTHROPIC_API_KEY: "test-anthropic-key" };
+    // Real Letterboxd format: written review with no "Watched on..." prefix
     const feedXml = makeRssXml([
-      makeItem("guid1", "Pulp Fiction, 1994 - ★★★★★", "https://letterboxd.com/a/", false, "<p>Watched 01 Jan 2025. A masterpiece.</p>"),
+      makeItem("guid1", "Pulp Fiction, 1994 - ★★★★★", "https://letterboxd.com/a/", false, '<p><img src="poster.jpg"/></p> <p>A masterpiece.</p>'),
     ]);
 
     const mockFetch = vi
@@ -206,6 +224,28 @@ describe("runScheduled", () => {
     const roastBody = JSON.parse(roastInit.body as string);
     expect(roastBody.reply_to_message_id).toBe(42);
     expect(roastBody.text).toBe("🤖 Bold choice.");
+  });
+
+  it("does not send roast for entries with no written description (Watched-only)", async () => {
+    const kv = makeMockKV();
+    const env = { ...makeEnv(kv, "alice"), ANTHROPIC_API_KEY: "test-anthropic-key" };
+    // Real Letterboxd format for log-only entry: only the "Watched on..." metadata, no review text
+    const feedXml = makeRssXml([
+      makeItem("guid1", "Inception, 2010 - ★★★★★", "https://letterboxd.com/a/", false, '<p><img src="poster.jpg"/></p> <p>Watched on Wednesday February 25, 2026.</p>'),
+    ]);
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(feedXml) } as unknown as Response)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ result: { message_id: 1 } }) } as unknown as Response);
+    vi.stubGlobal("fetch", mockFetch);
+
+    await runScheduled(env as any);
+
+    // Only 2 fetches: RSS + Telegram notification. No Claude API call.
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const calls = mockFetch.mock.calls.map((args) => args[0] as string);
+    expect(calls.every((url) => !url.includes("anthropic.com"))).toBe(true);
   });
 
   it("continues processing other users when one feed fetch throws", async () => {
