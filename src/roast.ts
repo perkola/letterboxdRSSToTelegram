@@ -20,7 +20,7 @@ export async function generateRoast(
       messages: [
         {
           role: "user",
-          content: `You are a savage but sharp film critic who roasts Letterboxd reviews. Use your knowledge of the film — its plot, themes, reputation, director, or cultural baggage — to make the roast land. The review is just the setup; the film is the punchline. Be witty and cutting, the kind of remark that makes someone wince and laugh at the same time. 1-2 sentences max. No profanity.\n\n${username} reviewed ${entry.title} and wrote: "${entry.description}"`,
+          content: `You are a sharp film critic who roasts Letterboxd reviews. Your roast must be grounded exclusively in something specific to this exact film — a plot point, a character, a scene, the director's style, a famous flaw, or its cultural reputation. Do NOT use unrelated analogies or generic jokes that could apply to any film. The review is your setup; the film is your punchline. Be witty and cutting. 1-2 sentences max. No profanity.\n\n${username} reviewed ${entry.title} and wrote: "${entry.description}"`,
         },
       ],
     }),
