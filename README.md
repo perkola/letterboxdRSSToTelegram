@@ -164,7 +164,7 @@ https://letterboxd.com/alice/film/alien-romulus/
      Ridley Scott was right to leave the franchise — bold.
 ```
 
-Roasts are powered by the [Claude API](https://console.anthropic.com) (Haiku model — fast and cheap). This feature is entirely opt-in: if `ANTHROPIC_API_KEY` is not set, the bot behaves exactly as before. Reviews with no written text (ratings only) are never roasted.
+Roasts are powered by the [Claude API](https://console.anthropic.com) (Claude Haiku 5.5 — fast and cheap, with film knowledge through mid-2026). This feature is entirely opt-in: if `ANTHROPIC_API_KEY` is not set, the bot behaves exactly as before. Reviews with no written text (ratings only) are never roasted.
 
 ### Enable it
 
@@ -219,12 +219,25 @@ curl "http://localhost:8787/seed?secret=<your-seed-secret>"
 
 Note: local runs won't have access to your real KV data or secrets unless you configure a `.dev.vars` file (see [Wrangler docs](https://developers.cloudflare.com/workers/wrangler/configuration/#secrets)).
 
+### Trying out roasts
+
+Run the roast generator against the real Claude API without Telegram, KV, or a deploy. Handy when tweaking the prompt in `src/roast.ts`:
+
+```bash
+npm run roast                                          # built-in sample reviews
+npm run roast -- "Title, 2026 - ★★★" "Review text"     # one review of your own
+```
+
+It reads `ANTHROPIC_API_KEY` from your shell or from `.dev.vars`, and exits non-zero if any roast comes back empty.
+
 ### Project structure
 
 ```
 src/
   index.ts     # Core logic: RSS fetch, XML parse, KV dedup, Telegram notify
   roast.ts     # Optional add-on: Claude API roast generator
+scripts/
+  roast.ts     # `npm run roast`: try roasts locally against the real API
 wrangler.toml  # Worker name, cron schedule, KV binding, USERNAMES var
 ```
 

@@ -15,12 +15,17 @@ export async function generateRoast(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 150,
+      model: "claude-haiku-5-5",
+      // Thinking is on by default and counts toward max_tokens, so leave headroom
+      max_tokens: 1024,
+      output_config: { effort: "low" },
+      system: `You are a sharp film critic roasting Letterboxd reviews in a friends' group chat. Your reply is posted as-is, so reply with only the roast: at most 30 words, witty and cutting, no profanity. Refer to the reviewer by their username or as "they". No preamble, no quotation marks around it, and never comment on what you do or don't know about the film.
+
+Every film you're given is real, though it may be newer than your training data. The best roasts use a specific detail of the film: a plot point, a character, the director's style, a famous flaw, or its reputation. Only use details you're certain are accurate; otherwise roast the review itself: the writing style, word choices, tone, or the opinion. When you do that, go straight into the roast without saying so (no "I don't know this film, so…"): the chat shouldn't be able to tell whether you recognised it.`,
       messages: [
         {
           role: "user",
-          content: `You are a sharp film critic who roasts Letterboxd reviews. ${entry.title} is a real film that ${username} has watched — its existence is not in question. You may simply not have information about it because it was released after your training data ends.\n\nIf you know this film: ground your roast in something specific to it — a plot point, a character, the director's style, a famous flaw, or its cultural reputation.\nIf you don't know this film: roast the review itself — mock the reviewer's writing style, their word choices, their tone, or how they express their opinion. Do not question whether the film is real.\n\nEither way: be witty and cutting, 1–2 sentences max, no profanity. Commit fully — never say you lack information.\n\n${username} reviewed ${entry.title} and wrote: "${entry.description}"`,
+          content: `${username} reviewed ${entry.title} and wrote: "${entry.description}"`,
         },
       ],
     }),
@@ -31,7 +36,8 @@ export async function generateRoast(
     return null;
   }
 
-  const data = (await res.json()) as { content?: Array<{ text?: string }> };
-  const text = data.content?.[0]?.text?.trim();
+  // The response may start with thinking blocks, so find the text block by type
+  const data = (await res.json()) as { content?: Array<{ type?: string; text?: string }> };
+  const text = data.content?.find((block) => block.type === "text")?.text?.trim();
   return text ? `🤖 ${text}` : null;
 }

@@ -26,7 +26,10 @@ describe("generateRoast", () => {
       ok: true,
       json: () =>
         Promise.resolve({
-          content: [{ text: "Calling Pulp Fiction a masterpiece — join the queue, it only has 2 million members." }],
+          content: [
+            { type: "thinking", thinking: "", signature: "sig" },
+            { type: "text", text: "Calling Pulp Fiction a masterpiece — join the queue, it only has 2 million members." },
+          ],
         }),
     } as unknown as Response);
     vi.stubGlobal("fetch", mockFetch);
@@ -37,8 +40,9 @@ describe("generateRoast", () => {
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("https://api.anthropic.com/v1/messages");
     expect(JSON.parse(init.body as string)).toMatchObject({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 150,
+      model: "claude-haiku-5-5",
+      max_tokens: 1024,
+      output_config: { effort: "low" },
     });
     expect(result).toBe("🤖 Calling Pulp Fiction a masterpiece — join the queue, it only has 2 million members.");
   });

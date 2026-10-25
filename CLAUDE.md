@@ -19,6 +19,7 @@ A Cloudflare Worker that polls Letterboxd RSS feeds every 30 minutes and sends T
 ```
 src/index.ts          # Core logic: RSS fetch, XML parse, KV dedup, Telegram notify
 src/roast.ts          # Optional add-on: Claude API roast generator
+scripts/roast.ts      # `npm run roast`: try roasts against the real API, no Telegram/KV
 wrangler.toml         # Worker config: cron schedule, KV binding, USERNAMES var
 ```
 
@@ -48,7 +49,7 @@ The Worker exports two handlers:
 - **XML parser** must use `ignoreAttributes: true` — without it, `<guid isPermaLink="true">` parses as an object instead of a string, silently breaking deduplication.
 - **KV entries** are capped at 200 GUIDs per user (`seen:<username>`) to prevent unbounded growth.
 - **`/seed` endpoint** pre-populates KV on first deploy to avoid notifying the entire review history. Call it once immediately after deploying, before adding the bot to the group chat.
-- **Roast add-on** (`src/roast.ts`) — entirely opt-in, gated on `ANTHROPIC_API_KEY`. Calls Claude Haiku after each notification to generate a witty roast of the review text, posted as a threaded Telegram reply via `reply_to_message_id`. Only fires for entries with a written description (the `<description>` field, stripped of HTML and Letterboxd's "Watched on Weekday Month DD, YYYY." metadata prefix). Roast errors are caught and logged without blocking notifications.
+- **Roast add-on** (`src/roast.ts`) — entirely opt-in, gated on `ANTHROPIC_API_KEY`. Calls Claude Haiku 5.5 (`claude-haiku-5-5`, raw `fetch`, effort `low`) after each notification to generate a witty roast of the review text, posted as a threaded Telegram reply via `reply_to_message_id`. Only fires for entries with a written description (the `<description>` field, stripped of HTML and Letterboxd's "Watched on Weekday Month DD, YYYY." metadata prefix). Roast errors are caught and logged without blocking notifications. Thinking is on by default for this model and counts toward `max_tokens`, so keep headroom (1024) and read the reply by finding the `type: "text"` block — the response can start with `thinking` blocks.
 
 ---
 
@@ -58,8 +59,9 @@ The Worker exports two handlers:
 npm install
 npx tsc --noEmit                                              # type check
 npx wrangler dev                                              # local server
-curl "http://localhost:8787/cdn-cgi/handler/scheduled"        # trigger cron
-curl "http://localhost:8787/seed"                             # trigger seed
+curl "http://localhost:8787/cdn-cgi/handler/scheduled"        # trigger cron (seed first: local KV starts empty)
+curl "http://localhost:8787/seed?secret=<SEED_SECRET>"        # trigger seed
+npm run roast                                                 # try roasts on sample reviews (needs ANTHROPIC_API_KEY)
 ```
 
 ## Deployment

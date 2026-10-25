@@ -211,7 +211,7 @@ describe("runScheduled", () => {
       .fn()
       .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(feedXml) } as unknown as Response)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ result: { message_id: 42 } }) } as unknown as Response)
-      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ content: [{ text: "Bold choice." }] }) } as unknown as Response)
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ content: [{ type: "text", text: "Bold choice." }] }) } as unknown as Response)
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ result: { message_id: 43 } }) } as unknown as Response);
     vi.stubGlobal("fetch", mockFetch);
 

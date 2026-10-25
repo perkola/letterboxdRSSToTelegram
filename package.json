@@ -2,12 +2,14 @@
   "name": "letterboxd-rss-to-telegram",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "roast": "node --env-file-if-exists=.dev.vars scripts/roast.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260701.1",
